@@ -1,0 +1,17 @@
+[project]
+name = "UET.COM1050"
+version = "0.1.0"
+description = "Computational thinking"
+requires-python = ">=3.10"
+
+dependencies = ["pytest"]
+
+#[project.optional-dependencies]
+#dev = [
+#    "pytest"
+#]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
