@@ -1,0 +1,74 @@
+name: Autograding
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Get changed files
+      id: changed
+      uses: tj-actions/changed-files@v44
+
+    - name: Build test matrix
+      id: set-matrix
+      run: |
+        tests=()
+
+        for file in ${{ steps.changed.outputs.all_changed_files }}; do
+          if [[ $file =~ ^week([0-9]+)/p([0-9]+)\.py$ ]]; then
+            week="week${BASH_REMATCH[1]}"
+            problem="p${BASH_REMATCH[2]}"
+            testfile="tests/${week}/test_${problem}.py"
+
+            if [ -f "$testfile" ]; then
+              tests+=("$testfile")
+            fi
+          fi
+        done
+
+        # Remove duplicates
+        unique_tests=$(printf "%s\n" "${tests[@]}" | sort -u)
+
+        # Convert to JSON array
+        json=$(printf "%s\n" "$unique_tests" | jq -R -s -c 'split("\n")[:-1]')
+
+        echo "matrix=$json" >> $GITHUB_OUTPUT
+
+  grade:
+    needs: discover
+    if: needs.discover.outputs.matrix != '[]'
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        testfile: ${{ fromJson(needs.discover.outputs.matrix) }}
+
+    name: Test ${{ matrix.testfile }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+
+    - name: Run pytest
+      run: |
+        pytest ${{ matrix.testfile }} -vv
