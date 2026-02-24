@@ -6,4 +6,4 @@ def solution():
     print(f"{tb:.1f}")
 
 if __name__ == "__main__":
-    solution()
+    solution() 
