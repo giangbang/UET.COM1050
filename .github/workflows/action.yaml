@@ -43,7 +43,19 @@ jobs:
         unique_tests=$(printf "%s\n" "${tests[@]}" | sort -u)
 
         # Convert to JSON array
-        json=$(printf "%s\n" "$unique_tests" | jq -R -s -c 'split("\n")[:-1]')
+        # json=$(printf "%s\n" "$unique_tests" | jq -R -s -c 'split("\n")[:-1]')
+        json=$(printf "%s\n" "$unique_tests" | jq -R -s -c '
+          split("\n")[:-1]
+          | map({
+              testfile: .,
+              name: (
+                . 
+                | sub("^tests/"; "") 
+                | sub("^test_"; "") 
+                | sub("/test_"; "/") 
+              )
+            })
+        ')
 
         echo "matrix=$json" >> $GITHUB_OUTPUT
 
@@ -55,9 +67,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        testfile: ${{ fromJson(needs.discover.outputs.matrix) }}
+        include: ${{ fromJson(needs.discover.outputs.matrix) }}
 
-    name: Test ${{ matrix.testfile }}
+    name: Test ${{ matrix.name }}
 
     steps:
     - name: Checkout
