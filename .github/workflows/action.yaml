@@ -6,7 +6,9 @@ on:
       - master
       - test
   pull_request:
-    branches: [ main ]
+    branches: 
+      - master
+      - main
 
 jobs:
   discover:
